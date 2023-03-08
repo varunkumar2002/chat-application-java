@@ -5,21 +5,25 @@ import javax.swing.border.*;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 
-public class Client extends JFrame implements ActionListener{
+public class Client implements ActionListener{
     JTextField text;
-    JPanel a1;
-    Box vertical = Box.createVerticalBox();
+    static JPanel a1;
+    static Box vertical = Box.createVerticalBox();
+    static JFrame f = new JFrame();
+    static DataOutputStream dout;
     Client(){
-        setLayout(null);
+        f.setLayout(null);
         JPanel p1 = new JPanel(); //used when there is something to do at the top of the frame.
         p1.setBackground(new Color(7, 94, 94));
         p1.setBounds(0,0,450,70);
         p1.setLayout(null);
-        add(p1);//add the panel above the frame.
+        f.add(p1);//add the panel above the frame.
 
         ImageIcon i1 = new ImageIcon(ClassLoader.getSystemResource("icons/3.png"));
         Image i2 = i1.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT);
@@ -77,12 +81,12 @@ public class Client extends JFrame implements ActionListener{
 
         a1 = new JPanel();
         a1.setBounds(5,75,440,570);
-        add(a1);
+        f.add(a1);
 
         text = new JTextField();
         text.setBounds(5,655,310,40);
         text.setFont(new Font("SAN_SERIF",Font.PLAIN,16));
-        add(text);
+        f.add(text);
 
         JButton send = new JButton("Send");
         send.setBounds(320,655,123,40);
@@ -90,18 +94,19 @@ public class Client extends JFrame implements ActionListener{
         send.setForeground(Color.WHITE);
         send.addActionListener(this);
         send.setFont(new Font("SAN_SERIF",Font.PLAIN,16));
-        add(send);
+        f.add(send);
 
-        setSize(450,700); //sets the size of the frame.
+        f.setSize(450,700); //sets the size of the frame.
         
-        setLocation(900,50);//to set location on the screen.
-        setUndecorated(true);
-        getContentPane().setBackground(Color.WHITE);
+        f.setLocation(900,50);//to set location on the screen.
+        f.setUndecorated(true);
+        f.getContentPane().setBackground(Color.WHITE);
 
-        setVisible(true);// to make the frame visible.
+        f.setVisible(true);// to make the frame visible.
     }
 
     public void actionPerformed(ActionEvent ae){
+        try{
         String out = text.getText();
         System.out.println(out);
        
@@ -113,12 +118,16 @@ public class Client extends JFrame implements ActionListener{
         vertical.add(right);
         vertical.add(Box.createVerticalStrut(15));
         a1.add(vertical,BorderLayout.PAGE_START);
-
+        dout.writeUTF(out);
         text.setText("");
 
-        repaint();
-        invalidate();
-        validate();
+        f.repaint();
+        f.invalidate();
+        f.validate();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
     }
     public static JPanel formatLabel(String out){
         JPanel panel = new JPanel();
@@ -141,5 +150,29 @@ public class Client extends JFrame implements ActionListener{
 
     public static void main(String[] args){
         new Client();
+        try{
+            Socket s = new Socket("127.0.0.1",6001);
+            DataInputStream din = new DataInputStream(s.getInputStream());
+            dout = new DataOutputStream(s.getOutputStream());
+
+            while(true){
+                a1.setLayout(new BorderLayout());
+                String msg = din.readUTF();
+                JPanel panel = formatLabel(msg);
+
+                JPanel left = new JPanel(new BorderLayout());
+                left.add(panel,BorderLayout.LINE_START);
+                vertical.add(left);
+                vertical.add(Box.createVerticalStrut(15));
+                a1.add(vertical,BorderLayout.PAGE_START);
+
+                
+                f.validate();
+                
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
     }
 }
